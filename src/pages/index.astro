@@ -96,9 +96,7 @@ const duration2 = (row2.length / 2 * pixelsPerItem) / pixelsPerSecond;
         <h2 class="section-title">
           <span class="claw-accent">⟩</span> What People Say
         </h2>
-        <a href="/shoutouts" class="section-link">View all <span class="sr-only">community shoutouts</span>
-          <span aria-hidden="true">→</span>
-        </a>
+        <a href="/shoutouts" class="section-link">View all →</a>
       </div>
       <div class="testimonials-track">
         <div class="testimonials-row row-1" style={`--duration: ${duration1}s`}>
@@ -533,32 +531,113 @@ const duration2 = (row2.length / 2 * pixelsPerItem) / pixelsPerSecond;
       const tagline = document.getElementById('tagline');
       const originalTagline = tagline.textContent;
       let isAnimating = false;
+      
+      // Crabwalk variables
+      let isCrabWalking = false;
+      let crabSpeed = 2;
+      let crabPos = { x: 0, y: 0 };
+      let crabVel = { x: 0, y: 0 };
+      let crabFrame;
+      let isDetached = false;
 
       lobsterIcon.addEventListener('mouseenter', () => {
-        if (isAnimating) return;
-        isAnimating = true;
+        // Only enable interactive effects on devices that support hover
+        if (!window.matchMedia('(hover: hover)').matches) return;
 
-        // Animate to Dalek text
-        tagline.style.transition = 'opacity 0.2s ease';
-        tagline.style.opacity = '0';
-
-        setTimeout(() => {
-          tagline.textContent = 'EXFOLIATE! EXFOLIATE!';
-          tagline.classList.add('dalek-mode');
-          tagline.style.opacity = '1';
-        }, 200);
-
-        // Revert after 2 seconds
-        setTimeout(() => {
+        // Dalek Logic
+        if (!isAnimating) {
+          isAnimating = true;
+          tagline.style.transition = 'opacity 0.2s ease';
           tagline.style.opacity = '0';
           setTimeout(() => {
-            tagline.textContent = originalTagline;
-            tagline.classList.remove('dalek-mode');
+            tagline.textContent = 'EXFOLIATE! EXFOLIATE!';
+            tagline.classList.add('dalek-mode');
             tagline.style.opacity = '1';
-            isAnimating = false;
           }, 200);
-        }, 2000);
+          setTimeout(() => {
+            tagline.style.opacity = '0';
+            setTimeout(() => {
+              tagline.textContent = originalTagline;
+              tagline.classList.remove('dalek-mode');
+              tagline.style.opacity = '1';
+              isAnimating = false;
+            }, 200);
+          }, 2000);
+        }
+
+        // Crabwalk Logic
+        if (!isDetached) {
+          const rect = lobsterIcon.getBoundingClientRect();
+          crabPos = { x: rect.left, y: rect.top };
+          
+          // Create spacer to prevent layout shift
+          const spacer = document.createElement('div');
+          spacer.style.width = rect.width + 'px';
+          spacer.style.height = rect.height + 'px';
+          const style = window.getComputedStyle(lobsterIcon);
+          spacer.style.margin = style.margin;
+          spacer.style.display = style.display;
+          lobsterIcon.parentNode.insertBefore(spacer, lobsterIcon);
+          
+          lobsterIcon.style.position = 'fixed';
+          lobsterIcon.style.left = crabPos.x + 'px';
+          lobsterIcon.style.top = crabPos.y + 'px';
+          lobsterIcon.style.margin = '0';
+          lobsterIcon.style.zIndex = '9999';
+          lobsterIcon.style.transition = 'none';
+          
+          // Random initial velocity
+          const angle = Math.random() * Math.PI * 2;
+          crabVel = { x: Math.cos(angle), y: Math.sin(angle) };
+          
+          isDetached = true;
+        }
+        
+        isCrabWalking = true;
+        cancelAnimationFrame(crabFrame);
+        updateCrab();
       });
+
+      lobsterIcon.addEventListener('mouseleave', () => {
+        isCrabWalking = false;
+        cancelAnimationFrame(crabFrame);
+      });
+
+      function updateCrab() {
+        if (!isCrabWalking) return;
+
+        // Move
+        crabPos.x += crabVel.x * crabSpeed;
+        crabPos.y += crabVel.y * crabSpeed;
+
+        // Bounce off edges
+        const width = lobsterIcon.offsetWidth;
+        const height = lobsterIcon.offsetHeight;
+        const winW = window.innerWidth;
+        const winH = window.innerHeight;
+
+        if (crabPos.x <= 0 || crabPos.x + width >= winW) {
+          crabVel.x *= -1;
+          crabPos.x = Math.max(0, Math.min(crabPos.x, winW - width));
+        }
+        if (crabPos.y <= 0 || crabPos.y + height >= winH) {
+          crabVel.y *= -1;
+          crabPos.y = Math.max(0, Math.min(crabPos.y, winH - height));
+        }
+
+        // Apply position
+        lobsterIcon.style.left = `${crabPos.x}px`;
+        lobsterIcon.style.top = `${crabPos.y}px`;
+
+        // Waddle rotation
+        const waddle = Math.sin(Date.now() / 60) * 15;
+        lobsterIcon.style.transform = `rotate(${waddle}deg) scale(1.1)`;
+
+        // Accelerate
+        crabSpeed += 0.05;
+
+        crabFrame = requestAnimationFrame(updateCrab);
+      }
     </script>
 
     <!-- What It Does -->
@@ -802,9 +881,11 @@ const duration2 = (row2.length / 2 * pixelsPerItem) / pixelsPerSecond;
     transition: transform 0.3s ease;
   }
 
-  .lobster-icon:hover {
-    transform: scale(1.1);
-    animation: none;
+  @media (hover: hover) {
+    .lobster-icon:hover {
+      transform: scale(1.1);
+      animation: none;
+    }
   }
 
   .lobster-icon svg {
@@ -814,8 +895,10 @@ const duration2 = (row2.length / 2 * pixelsPerItem) / pixelsPerSecond;
     transition: filter 0.3s ease;
   }
 
-  .lobster-icon:hover svg {
-    filter: drop-shadow(0 0 30px rgba(0, 229, 204, 0.6));
+  @media (hover: hover) {
+    .lobster-icon:hover svg {
+      filter: drop-shadow(0 0 30px rgba(0, 229, 204, 0.6));
+    }
   }
 
   .lobster-icon .eye-glow {
@@ -1241,10 +1324,6 @@ const duration2 = (row2.length / 2 * pixelsPerItem) / pixelsPerSecond;
     animation: fadeInUp 0.8s ease-out 0.65s both;
   }
 
-  .press-section .section-title {
-    margin-bottom: 20px;
-  }
-
   .press-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -1337,10 +1416,14 @@ const duration2 = (row2.length / 2 * pixelsPerItem) / pixelsPerSecond;
     font-family: var(--font-display);
     font-size: 1.4rem;
     font-weight: 600;
-    margin-bottom: 0;
+    margin-bottom: 20px;
     display: flex;
     align-items: center;
     gap: 10px;
+  }
+
+  .section-header .section-title {
+    margin-bottom: 0;
   }
 
   .section-link {
@@ -1962,38 +2045,6 @@ const duration2 = (row2.length / 2 * pixelsPerItem) / pixelsPerSecond;
     .macos-download-btn {
       padding: 12px 20px;
       font-size: 0.9rem;
-    }
-  }
-
-  /* Accessibility Utilities */
-
-  /* Hides content visually but keeps it available for screen readers */
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border-width: 0;
-  }
-
-  /* Global Focus State: Replaces the default browser ring with your theme colors */
-  :focus-visible {
-    outline: 3px solid var(--cyan-bright);
-    outline-offset: 4px;
-    border-radius: 4px;
-  }
-
-  /* Respect user's system settings for reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    *, ::before, ::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
     }
   }
 </style>
